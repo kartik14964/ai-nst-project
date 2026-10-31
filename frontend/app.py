@@ -23,7 +23,7 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 HF_SPACE_ID = os.environ.get("HF_SPACE_ID", "kartik14964/ai-nst-project")
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
-# Automatically set credentials if provided via environment
+# Set credentials in environment for all Hugging Face libraries if provided
 if HF_TOKEN:
     os.environ["HF_TOKEN"] = HF_TOKEN
     os.environ["HUGGING_FACE_HUB_TOKEN"] = HF_TOKEN
@@ -50,7 +50,7 @@ def call_backend_style_transfer(content_path, style_path, alpha):
     """
     from gradio_client import Client, handle_file
 
-    client = Client(HF_SPACE_ID)
+    client = Client(HF_SPACE_ID, token=HF_TOKEN) if HF_TOKEN else Client(HF_SPACE_ID)
     return client.predict(
         content_img=handle_file(content_path),
         style_img=handle_file(style_path),
