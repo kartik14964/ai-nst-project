@@ -525,7 +525,11 @@
                     <div class="card-header text-center py-3">Content Source</div>
                     <div class="card-body text-center">
                         <div class="preview-image mb-3" id="contentPreview">
-                            <span>Select Content Image</span>
+                            {% if content_image %}
+                                <img src="{{ url_for('send_image', filename=content_image) }}" alt="Content Image">
+                            {% else %}
+                                <span>Select Content Image</span>
+                            {% endif %}
                         </div>
                         {{ form.content(class="form-control", onchange="previewFile(this, 'contentPreview')") }}
                     </div>
@@ -538,7 +542,11 @@
                     <div class="card-header text-center py-3">Style Reference</div>
                     <div class="card-body text-center">
                         <div class="preview-image mb-3" id="stylePreview">
-                            <span>Select Style Image</span>
+                            {% if style_image %}
+                                <img src="{{ url_for('send_image', filename=style_image) }}" alt="Style Image">
+                            {% else %}
+                                <span>Select Style Image</span>
+                            {% endif %}
                         </div>
                         {{ form.style(class="form-control", onchange="previewFile(this, 'stylePreview')") }}
                     </div>
