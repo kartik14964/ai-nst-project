@@ -15,10 +15,6 @@ env/
 # Gradio cache
 .gradio/
 
-# Ignore user uploads in static/uploads (keep default samples)
+# Ignore runtime user uploads in static/uploads
 frontend/static/uploads/*
-!frontend/static/uploads/brad_pitt.jpg
-!frontend/static/uploads/la_muse.jpg
-!frontend/static/uploads/mondrian_cropped.jpg
-!frontend/static/uploads/picasso_seated_nude_hr.jpg
-!frontend/static/uploads/stylized_brad_pitt.jpg
+!frontend/static/uploads/.gitkeep
