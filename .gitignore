@@ -12,6 +12,9 @@ venv/
 .venv/
 env/
 
+# Gradio cache
+.gradio/
+
 # Ignore user uploads in static/uploads (keep default samples)
 NST_Code/static/uploads/*
 !NST_Code/static/uploads/brad_pitt.jpg

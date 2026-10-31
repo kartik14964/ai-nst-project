@@ -1,12 +1,3 @@
----
-title: AdaIN Neural Style Transfer
-emoji: 🎨
-colorFrom: indigo
-colorTo: purple
-sdk: gradio
-app_file: app.py
-pinned: false
----
 
 # 🎨 Real-Time Neural Style Transfer with AdaIN
 
