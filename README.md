@@ -1,3 +1,13 @@
+---
+title: AdaIN Neural Style Transfer
+emoji: 🎨
+colorFrom: indigo
+colorTo: purple
+sdk: gradio
+app_file: app.py
+pinned: false
+---
+
 # 🎨 Real-Time Neural Style Transfer with AdaIN
 
 An end-to-end Deep Learning web application for **Arbitrary Neural Style Transfer** using **Adaptive Instance Normalization (AdaIN)** in PyTorch, wrapped with an interactive **Flask** web interface.
