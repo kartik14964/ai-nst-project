@@ -34,7 +34,7 @@ This project is based on the paper:
 > *Xun Huang, Serge Belongie (ICCV 2017)*
 
 <p align="center">
-  <img src="NST_Code/adain_algo.png" alt="AdaIN Algorithm Architecture" width="700"/>
+  <img src="training/adain_algo.png" alt="AdaIN Algorithm Architecture" width="700"/>
 </p>
 
 1. **VGG-19 Encoder (Fixed)**: Computes feature representations for both the content image ($f(c)$) and style image ($f(s)$) up to layer `relu4_1`.
@@ -50,28 +50,33 @@ This project is based on the paper:
 
 ```text
 ai-nst-project/
-├── app.py                      # Root launcher script for the web app
-├── requirements.txt            # Project dependencies
-├── Procfile.txt                # Deployment configuration (Gunicorn)
-├── README.md                   # Documentation
-├── code.ipynb                  # Exploration and development notebook
-├── Demo_IO_Images/             # Sample input and stylized output pairs
-│   ├── i-p/                    # Example inputs (content and style)
-│   └── o-p/                    # Example stylized outputs
-└── NST_Code/
-    ├── app.py                  # Core Flask application and routing
-    ├── train.py                # Model training script
-    ├── vgg_normalised.pth      # Pretrained VGG-19 encoder weights
-    ├── adain_algo.png          # Architecture illustration diagram
-    ├── experiment/
-    │   └── final_exp/
-    │       └── decoder_final.pth  # Trained AdaIN decoder weights
-    ├── static/                 # Upload directory and assets
-    ├── templates/
-    │   └── index.html          # Web UI template
-    └── utils/
-        ├── models.py           # VGGEncoder and Decoder architectures
-        └── utils.py            # AdaIN implementation and image utilities
+├── frontend/                     # Lightweight Flask web UI (deployed on Render)
+│   ├── app.py                    # Flask server & HF API bridge
+│   ├── templates/index.html      # Responsive Dark-mode UI
+│   ├── static/                   # Sample images & uploaded results
+│   ├── examples/                 # Sample images displayed on UI
+│   ├── requirements.txt          # Lightweight dependencies (~40MB RAM)
+│   └── Procfile                  # Production server config (Gunicorn)
+│
+├── backend/                      # ZeroGPU AI Inference API (deployed on Hugging Face)
+│   ├── app.py                    # Gradio ZeroGPU inference service
+│   ├── requirements.txt          # PyTorch, Torchvision, and Gradio dependencies
+│   ├── vgg_normalised.pth        # Pretrained VGG-19 encoder weights
+│   ├── experiment/
+│   │   └── final_exp/decoder_final.pth  # Trained AdaIN decoder weights
+│   └── utils/
+│       ├── models.py             # VGGEncoder and Decoder architectures
+│       └── utils.py              # AdaIN algorithm & tensor helpers
+│
+├── training/                     # Offline training pipeline
+│   ├── train.py                  # Custom decoder training script
+│   ├── adain_algo.png            # Architecture diagram
+│   ├── content_data/             # Sample content images for training
+│   └── style_data/               # Sample style images for training
+│
+├── Demo_IO_Images/               # README demo preview pairs
+├── app.py                        # Local launcher script
+└── README.md                     # Documentation
 ```
 
 ---
@@ -122,10 +127,10 @@ Navigate to **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your web brows
 If you wish to train your own decoder on custom content and style datasets:
 
 ```bash
-python3 NST_Code/train.py \
+python3 training/train.py \
     --content_dir /path/to/coco2014 \
     --style_dir /path/to/wikiart \
-    --vgg NST_Code/vgg_normalised.pth \
+    --vgg backend/vgg_normalised.pth \
     --epochs 20 \
     --batch_size 8 \
     --lr 1e-4 \
