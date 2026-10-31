@@ -1,11 +1,9 @@
 import os
-import sys
 import shutil
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, send_from_directory
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
 from wtforms import FileField, SubmitField, FloatField, HiddenField
-from PIL import Image
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,6 +21,12 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
 # Backend Hugging Face Space configuration
 HF_SPACE_ID = os.environ.get("HF_SPACE_ID", "kartik14964/ai-nst-project")
+HF_TOKEN = os.environ.get("HF_TOKEN")
+
+# Automatically set credentials if provided via environment
+if HF_TOKEN:
+    os.environ["HF_TOKEN"] = HF_TOKEN
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = HF_TOKEN
 
 
 class UploadForm(FlaskForm):
@@ -42,18 +46,24 @@ def allowed_file(filename):
 def call_backend_style_transfer(content_path, style_path, alpha):
     """
     Calls the Hugging Face Space ZeroGPU backend using gradio_client.
-    Lightweight, no PyTorch needed on this frontend server!
+    Tries /predict, /style_transfer, and fn_index=0 for maximum compatibility.
     """
     from gradio_client import Client, handle_file
 
     client = Client(HF_SPACE_ID)
-    result_path = client.predict(
-        content_img=handle_file(content_path),
-        style_img=handle_file(style_path),
-        alpha=float(alpha),
-        api_name="/predict"
-    )
-    return result_path
+    c_file = handle_file(content_path)
+    s_file = handle_file(style_path)
+    a_val = float(alpha)
+
+    # Try standard Gradio endpoint names
+    for endpoint in ["/predict", "/style_transfer"]:
+        try:
+            return client.predict(c_file, s_file, a_val, api_name=endpoint)
+        except Exception:
+            pass
+
+    # Fallback to default function index 0
+    return client.predict(c_file, s_file, a_val, fn_index=0)
 
 
 @app.route('/', methods=['GET', 'POST'])

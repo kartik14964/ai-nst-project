@@ -2,7 +2,5 @@ Flask
 flask-wtf
 WTForms
 Werkzeug
-Pillow
 gradio_client
 gunicorn
-

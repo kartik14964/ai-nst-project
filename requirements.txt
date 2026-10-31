@@ -2,7 +2,5 @@ Flask
 flask-wtf
 WTForms
 Werkzeug
-Pillow
-torch
-torchvision
-tqdm
+gradio_client
+gunicorn
