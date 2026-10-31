@@ -3,7 +3,7 @@ import shutil
 from flask import Flask, render_template, request, send_from_directory
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
-from wtforms import FileField, SubmitField, FloatField, HiddenField
+from wtforms import FileField, SubmitField, FloatField
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,8 +19,8 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
 app.config['UPLOAD_FOLDER'] = upload_folder
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
-# Backend Hugging Face Space configuration
-HF_SPACE_ID = os.environ.get("HF_SPACE_ID", "kartik14964/ai-nst-project")
+# Backend target: can be Hugging Face Space ID OR local server (e.g. http://127.0.0.1:7860)
+BACKEND_URL = os.environ.get("BACKEND_URL") or os.environ.get("HF_SPACE_ID", "kartik14964/ai-nst-project")
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 # Set credentials in environment for all Hugging Face libraries if provided
@@ -32,8 +32,6 @@ if HF_TOKEN:
 class UploadForm(FlaskForm):
     content = FileField('Content Image')
     style = FileField('Style Image')
-    content_path = HiddenField()
-    style_path = HiddenField()
     alpha = FloatField('Alpha', default=1.0)
     submit = SubmitField('Transfer Style')
 
@@ -50,7 +48,8 @@ def call_backend_style_transfer(content_path, style_path, alpha):
     """
     from gradio_client import Client, handle_file
 
-    client = Client(HF_SPACE_ID, token=HF_TOKEN) if HF_TOKEN else Client(HF_SPACE_ID)
+    use_token = HF_TOKEN if (HF_TOKEN and not BACKEND_URL.startswith("http")) else None
+    client = Client(BACKEND_URL, token=use_token) if use_token else Client(BACKEND_URL)
     return client.predict(
         content_img=handle_file(content_path),
         style_img=handle_file(style_path),
@@ -63,44 +62,28 @@ def call_backend_style_transfer(content_path, style_path, alpha):
 def index():
     form = UploadForm()
     result_image = None
-    content_filename = None
-    style_filename = None
     error = None
 
     if form.validate_on_submit():
-        if form.content.data and form.content.data.filename:
-            if allowed_file(form.content.data.filename):
-                content_filename = secure_filename(form.content.data.filename)
-                form.content.data.save(os.path.join(app.config['UPLOAD_FOLDER'], content_filename))
-                form.content_path.data = content_filename
-        else:
-            content_filename = form.content_path.data
-
-        if form.style.data and form.style.data.filename:
-            if allowed_file(form.style.data.filename):
-                style_filename = secure_filename(form.style.data.filename)
-                form.style.data.save(os.path.join(app.config['UPLOAD_FOLDER'], style_filename))
-                form.style_path.data = style_filename
-        else:
-            style_filename = form.style_path.data
-
-        # Validate that both files exist on disk before showing any preview or calling backend
-        content_path = os.path.join(app.config['UPLOAD_FOLDER'], content_filename) if content_filename else None
-        style_path = os.path.join(app.config['UPLOAD_FOLDER'], style_filename) if style_filename else None
-
-        if not content_path or not os.path.isfile(content_path):
+        if not form.content.data or not form.content.data.filename:
             error = 'Please select a Content Image to upload.'
-            content_filename = None
-            form.content_path.data = ''
-        elif not style_path or not os.path.isfile(style_path):
+        elif not form.style.data or not form.style.data.filename:
             error = 'Please select a Style Image to upload.'
-            style_filename = None
-            form.style_path.data = ''
+        elif not allowed_file(form.content.data.filename) or not allowed_file(form.style.data.filename):
+            error = 'Allowed image formats: .png, .jpg, .jpeg'
         else:
+            content_filename = secure_filename(form.content.data.filename)
+            style_filename = secure_filename(form.style.data.filename)
+            content_path = os.path.join(app.config['UPLOAD_FOLDER'], content_filename)
+            style_path = os.path.join(app.config['UPLOAD_FOLDER'], style_filename)
+
+            form.content.data.save(content_path)
+            form.style.data.save(style_path)
+
             try:
                 alpha = float(form.alpha.data if form.alpha.data is not None else 1.0)
                 
-                # Request inference from HF ZeroGPU backend
+                # Request inference from backend
                 temp_output_path = call_backend_style_transfer(content_path, style_path, alpha)
 
                 result_filename = 'stylized_' + content_filename
@@ -109,21 +92,15 @@ def index():
 
                 result_image = result_filename
             except Exception as e:
-                error = f"Inference error: {str(e)}. Please verify the Hugging Face Space backend is running."
+                error = f"Inference error: {str(e)}. Please verify the backend is running."
     else:
         if request.method == 'POST':
             error = 'Please select both a Content Image and a Style Image before submitting.'
-            content_filename = None
-            style_filename = None
-            form.content_path.data = ''
-            form.style_path.data = ''
 
     return render_template(
         'index.html',
         form=form,
         result_image=result_image,
-        content_image=content_filename,
-        style_image=style_filename,
         error=error
     )
 
