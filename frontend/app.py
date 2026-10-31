@@ -46,24 +46,17 @@ def allowed_file(filename):
 def call_backend_style_transfer(content_path, style_path, alpha):
     """
     Calls the Hugging Face Space ZeroGPU backend using gradio_client.
-    Tries /predict, /style_transfer, and fn_index=0 for maximum compatibility.
+    Directly targets the active '/style_transfer' endpoint.
     """
     from gradio_client import Client, handle_file
 
     client = Client(HF_SPACE_ID)
-    c_file = handle_file(content_path)
-    s_file = handle_file(style_path)
-    a_val = float(alpha)
-
-    # Try standard Gradio endpoint names
-    for endpoint in ["/predict", "/style_transfer"]:
-        try:
-            return client.predict(c_file, s_file, a_val, api_name=endpoint)
-        except Exception:
-            pass
-
-    # Fallback to default function index 0
-    return client.predict(c_file, s_file, a_val, fn_index=0)
+    return client.predict(
+        content_img=handle_file(content_path),
+        style_img=handle_file(style_path),
+        alpha=float(alpha),
+        api_name='/style_transfer'
+    )
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -91,10 +84,19 @@ def index():
         else:
             style_filename = form.style_path.data
 
-        if content_filename and style_filename:
-            content_path = os.path.join(app.config['UPLOAD_FOLDER'], content_filename)
-            style_path = os.path.join(app.config['UPLOAD_FOLDER'], style_filename)
+        # Validate that both files exist on disk before showing any preview or calling backend
+        content_path = os.path.join(app.config['UPLOAD_FOLDER'], content_filename) if content_filename else None
+        style_path = os.path.join(app.config['UPLOAD_FOLDER'], style_filename) if style_filename else None
 
+        if not content_path or not os.path.isfile(content_path):
+            error = 'Please select a Content Image to upload.'
+            content_filename = None
+            form.content_path.data = ''
+        elif not style_path or not os.path.isfile(style_path):
+            error = 'Please select a Style Image to upload.'
+            style_filename = None
+            form.style_path.data = ''
+        else:
             try:
                 alpha = float(form.alpha.data if form.alpha.data is not None else 1.0)
                 
@@ -110,10 +112,11 @@ def index():
                 error = f"Inference error: {str(e)}. Please verify the Hugging Face Space backend is running."
     else:
         if request.method == 'POST':
-            if not form.content_path.data and not (form.content.data and form.content.data.filename):
-                error = 'Please upload content image'
-            elif not form.style_path.data and not (form.style.data and form.style.data.filename):
-                error = 'Please upload style image'
+            error = 'Please select both a Content Image and a Style Image before submitting.'
+            content_filename = None
+            style_filename = None
+            form.content_path.data = ''
+            form.style_path.data = ''
 
     return render_template(
         'index.html',

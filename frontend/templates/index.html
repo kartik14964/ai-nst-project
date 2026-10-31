@@ -775,16 +775,18 @@
 <script>
     function previewFile(input, previewId) {
         const preview = document.getElementById(previewId);
-        const file = input.files[0];
+        const file = input.files ? input.files[0] : null;
         const reader = new FileReader();
 
         reader.addEventListener("load", function () {
-            // Convert image file to base64 string
             preview.innerHTML = `<img src="${reader.result}" alt="Image Preview">`;
         }, false);
 
         if (file) {
             reader.readAsDataURL(file);
+        } else {
+            const defaultText = previewId === 'contentPreview' ? 'Select Content Image' : 'Select Style Image';
+            preview.innerHTML = `<span>${defaultText}</span>`;
         }
     }
 
